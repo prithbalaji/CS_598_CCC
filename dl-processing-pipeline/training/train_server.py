@@ -33,6 +33,12 @@ import zlib
 from profiler import Profiler  # Assuming the profiler is in a separate file
 from decision_engine import DecisionEngine  # Assuming the decision engine is in a separate file
 
+
+def load_logging_config():
+    with open('logging.json') as read_file:
+        dictConfig(json.load(read_file))
+
+
 from utils import RemoteDataset
 import datetime
 import csv
@@ -51,18 +57,6 @@ DATA_LOGGER = logging.getLogger('data_collection')
 def load_logging_config():
     with open('logging.json') as read_file:
         dictConfig(json.load(read_file))
-
-
-from utils import RemoteDataset
-import datetime
-import csv
-
-# Generate a unique filename based on the current datetime
-filename = f"experiment_statistics_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-
-with open(filename, 'w', newline='') as csvfile:
-     csvwriter = csv.writer(csvfile)
-     csvwriter.writerow(['Epoch', 'Accuracy', 'Best Accuracy', 'Runtime (seconds)'])
 
 
 model_names = sorted(name for name in models.__dict__
