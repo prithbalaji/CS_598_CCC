@@ -62,7 +62,7 @@ def fill_queue(q, kill, batch_size, dataset_path, offloading_plan, offloading_va
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),  # Converts PIL images to tensors
-        ConditionalNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
+        ConditionalNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ]
 
     # Ensure that ImageFolder uses the transform to convert images to tensors
@@ -78,21 +78,21 @@ def fill_queue(q, kill, batch_size, dataset_path, offloading_plan, offloading_va
             elif offloading_value == 1:
                 num_transformations = 5
             else:
-                num_transformations = offloading_plan.get(sample_id, 0) 
+                num_transformations = offloading_plan.get(sample_id, 0)
 
-            transformed_data = data[i]  
-            for j in range(min(num_transformations, 5)):  
+            transformed_data = data[i]
+            for j in range(min(num_transformations, 5)):
                 transformed_data = transformations[j](transformed_data)
 
             # Serialize the transformed data
             if isinstance(transformed_data, Image.Image):
                 # If it's still a PIL image, convert it to bytes
                 img_byte_arr = BytesIO()
-                transformed_data.save(img_byte_arr, format='JPEG')  
+                transformed_data.save(img_byte_arr, format='JPEG')
                 transformed_data = img_byte_arr.getvalue()  # Get image in bytes
             elif isinstance(transformed_data, torch.Tensor):
                 # If it's a PyTorch tensor, convert to numpy and then to bytes
-                transformed_data = transformed_data.numpy().tobytes()  # Convert tensor to numpy and Serialize numpy array to bytes 
+                transformed_data = transformed_data.numpy().tobytes()  # Convert tensor to numpy and Serialize numpy array to bytes
             if compression_value == 1:
                 transformed_data = zlib.compress(transformed_data)  # Compress data
                 is_compressed = True
@@ -121,10 +121,10 @@ def serve(offloading_value, compression_value, batch_size):
     # Start the fill_queue process
     workers = []
     for worker_id in range(num_cores):
-        p = mp.Process(target=fill_queue, args=(q, kill, batch_size, 'imagenet', offloading_plan, offloading_value, compression_value, worker_id))
+        p = mp.Process(target=fill_queue, args=(q, kill, batch_size, '/data/imagenet', offloading_plan, offloading_value, compression_value, worker_id))
         workers.append(p)
         p.start()
-    
+
     # Start the gRPC server
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=8),
@@ -142,7 +142,7 @@ def serve(offloading_value, compression_value, batch_size):
     server.add_insecure_port('[::]:50051')
     server.start()
     server.wait_for_termination()
-    
+
     kill.set()
     for p in workers:
         p.join()
@@ -155,13 +155,13 @@ def custom_collate_fn(batch):
             raw_img_data = f.read()  # Read the raw JPEG image in binary
         raw_images.append(raw_img_data)
         targets.append(target)
-    
+
     return raw_images, targets  # Return two lists: images and targets
 
 
 if __name__ == '__main__':
     args = parse_args()
-    
+
     # Example usage of the --offloading argument
     offloading_value = args.offloading
     compression_value = args.compression
