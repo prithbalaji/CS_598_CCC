@@ -13,6 +13,16 @@ import time
 from io import BytesIO
 import argparse
 from utils import DecodeJPEG, ConditionalNormalize, ImagePathDataset
+import logging
+import json
+from logging.config import dictConfig
+
+LOGGER = logging.getLogger()
+
+def load_logging_config():
+    with open('logging.json') as read_file:
+        dictConfig(json.load(read_file))
+
 
 from PIL import Image
 kill = mp.Event()  # Global event to signal termination
@@ -26,7 +36,7 @@ def parse_args():
     return parser.parse_args()
 
 def handle_termination(signum, frame):
-    print("Termination signal received. Stopping workers...")
+    LOGGER.warning("Termination signal received. Stopping workers...")
     kill.set()  # Set the event to stop the fill_queue process
 class DataFeedService(data_feed_pb2_grpc.DataFeedServicer):
     def __init__(self, q, offloading_plan):
@@ -39,7 +49,7 @@ class DataFeedService(data_feed_pb2_grpc.DataFeedServicer):
             sample_id = request.sample_id
             transformations = request.transformations
             self.offloading_plan[sample_id] = transformations
-            print(f"Updated offloading plan: Sample {sample_id}, Transformations {transformations}")
+            LOGGER.info(f"Updated offloading plan: Sample {sample_id}, Transformations {transformations}")
 
         # Respond with preprocessed samples
         while not kill.is_set():
@@ -70,7 +80,7 @@ def fill_queue(q, kill, batch_size, dataset_path, offloading_plan, offloading_va
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=16, pin_memory=True, collate_fn=custom_collate_fn)
 
     for batch_idx, (data, target) in enumerate(loader):
-        print(f"Worker {worker_id} - Batch {batch_idx}: Loaded {len(data)} images.")
+        LOGGER.debug(f"Worker {worker_id} - Batch {batch_idx}: Loaded {len(data)} images.")
         for i in range(len(data)):  # Loop over individual samples
             sample_id = batch_idx * batch_size + i
             if offloading_value == 0:
