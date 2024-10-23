@@ -1,7 +1,7 @@
 # Use the PyTorch nightly build for CPU
 torch==2.5.0 --pre --extra-index-url https://download.pytorch.org/whl/nightly/cpu
 torchvision==0.20.0 --pre --extra-index-url https://download.pytorch.org/whl/nightly/cpu
-torchaudio==2.5. --pre --extra-index-url https://download.pytorch.org/whl/nightly/cpu
+torchaudio==2.5.0 --pre --extra-index-url https://download.pytorch.org/whl/nightly/cpu
 PyYAML==6.0.2
 grpcio==1.67.0
 protobuf==5.28.2
