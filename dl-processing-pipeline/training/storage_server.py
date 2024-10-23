@@ -17,16 +17,16 @@ import logging
 import json
 from logging.config import dictConfig
 
+from PIL import Image
+kill = mp.Event()  # Global event to signal termination
+num_cores = mp.cpu_count()
+
 LOGGER = logging.getLogger()
 
 def load_logging_config():
     with open('logging.json') as read_file:
         dictConfig(json.load(read_file))
 
-
-from PIL import Image
-kill = mp.Event()  # Global event to signal termination
-num_cores = mp.cpu_count()
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Start the data feed server with an offloading plan.")
@@ -38,6 +38,7 @@ def parse_args():
 def handle_termination(signum, frame):
     LOGGER.warning("Termination signal received. Stopping workers...")
     kill.set()  # Set the event to stop the fill_queue process
+
 class DataFeedService(data_feed_pb2_grpc.DataFeedServicer):
     def __init__(self, q, offloading_plan):
         self.q = q
