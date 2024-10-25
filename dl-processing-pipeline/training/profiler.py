@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 import numpy as np
 import zlib
 import time
-from decision_engine import DecisionEngine 
+from decision_engine import DecisionEngine
 import sys
 from io import BytesIO
 from PIL import Image
@@ -35,8 +35,8 @@ class Profiler:
         start = time.time()
         train_dataset = datasets.FakeData(100, (3, 224, 224), 10, transforms.ToTensor())
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, pin_memory=True, shuffle=True)
-        
-        
+
+
         # define loss function (criterion), optimizer, and learning rate scheduler
         criterion = nn.CrossEntropyLoss().to(self.device)
         model = models.__dict__['alexnet']()
@@ -44,7 +44,7 @@ class Profiler:
         optimizer = torch.optim.SGD(model.parameters(), self.lr,
                                 momentum=self.momentum,
                                 weight_decay=self.weight_decay)
-        
+
         model.train()
         start_time = time.time()
 
@@ -55,6 +55,10 @@ class Profiler:
             images = images.view(-1, 3, 224, 224)  # Flatten: (2, 2, 3, 224, 224) -> (4, 3, 224, 224)
             target = target.view(-1)  # Adjust target as well
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2d2ec36 (fixing profiler and refactoring things)
             images, target = images.to(self.device), target.to(self.device)
 
             output = model(images)
@@ -67,7 +71,7 @@ class Profiler:
 
         gpu_time = time.time() - start_time
         gpu_throughput = num_samples_gpu / gpu_time
-        
+
         # 2. Measure I/O throughput over gRPC (between training and storage node)
         num_samples_io = 0
         io_samples = []  # Store I/O samples for later CPU processing
@@ -80,18 +84,18 @@ class Profiler:
             ]
         )
         stub = data_feed_pb2_grpc.DataFeedStub(channel)
-        
+
         samples = stub.StreamSamples(iter([]))
-        
+
         for i, sample_batch in enumerate(samples):
             if i >= 100:  # Limit to 100 batches for profiling
                 break
             for s in sample_batch.samples:
-                io_samples.append(s) 
-                
+                io_samples.append(s)
+
                  # Store the sample for later CPU processing
                 num_samples_io += 1
-                
+
 
         io_time = time.time() - start
         io_throughput = num_samples_io / io_time
@@ -99,7 +103,7 @@ class Profiler:
         # 3. Measure CPU throughput (reuse samples from I/O section)
         num_samples_cpu = 0
         start = time.time()
-        
+
         # Reuse samples fetched during I/O for CPU processing
         sample_metrics = []
         for i, s in enumerate(io_samples):
@@ -169,7 +173,7 @@ class Profiler:
     def preprocess_sample(self, sample, transformations_applied):
         # List of transformations to apply individually
         decode_jpeg = DecodeJPEG()  # Assuming this is a method of the class
-        
+
         transformations = [
             decode_jpeg,  # Decode raw JPEG bytes to a PIL image
             transforms.RandomResizedCrop(224),
@@ -185,7 +189,7 @@ class Profiler:
         # Apply transformations starting from the index `transformations_applied`
         for i in range(transformations_applied, len(transformations)):
             transform = transformations[i]
-            
+
             if transform is not None:
                 start_time = time.time()
                 processed_sample = transform(processed_sample)  # Apply transformation
@@ -212,8 +216,8 @@ class Profiler:
         # print("Transformation Times:", times)
         return processed_sample, times, sizes
 
-    
-    
+
+
 
     def run_profiling(self):
         # Stage 1: Basic throughput analysis
@@ -225,12 +229,16 @@ class Profiler:
         #     # Stage 2: Detailed sample-specific profiling
         #     return gpu_throughput, io_throughput, cpu_preprocessing_throughput, self.stage_two_profiling()
         return gpu_throughput, io_throughput, cpu_preprocessing_throughput, None
-    
+
 
 
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     profiler = Profiler(batch_size=200, dataset_path='imagenet', grpc_host='localhost', grpc_port=50051)
+=======
+    profiler = Profiler(batch_size=1, dataset_path='imagenet', grpc_host='localhost', grpc_port=50051)
+>>>>>>> 2d2ec36 (fixing profiler and refactoring things)
     gpu_throughput, io_throughput, cpu_preprocessing_throughput, sample_metrics = profiler.run_profiling()
     print("Sample Metrics:", sample_metrics)
     # if sample_metrics:  # If the profiler identifies an I/O bottleneck

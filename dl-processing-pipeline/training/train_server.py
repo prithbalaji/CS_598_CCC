@@ -53,6 +53,18 @@ def load_logging_config():
         dictConfig(json.load(read_file))
 
 
+from utils import RemoteDataset
+import datetime
+import csv
+
+# Generate a unique filename based on the current datetime
+filename = f"experiment_statistics_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+with open(filename, 'w', newline='') as csvfile:
+     csvwriter = csv.writer(csvfile)
+     csvwriter.writerow(['Epoch', 'Accuracy', 'Best Accuracy', 'Runtime (seconds)'])
+
+
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
