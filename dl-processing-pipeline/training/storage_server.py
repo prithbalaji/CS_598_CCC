@@ -22,6 +22,7 @@ kill = mp.Event()  # Global event to signal termination
 num_cores = mp.cpu_count()
 
 LOGGER = logging.getLogger()
+DATA_LOGGER = logging.getLogger('data_collection')
 
 def load_logging_config():
     with open('logging.json') as read_file:

@@ -46,6 +46,7 @@ with open(filename, 'w', newline='') as csvfile:
 
 
 LOGGER = logging.getLogger()
+DATA_LOGGER = logging.getLogger('data_collection')
 
 def load_logging_config():
     with open('logging.json') as read_file:
