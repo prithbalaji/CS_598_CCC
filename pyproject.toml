@@ -1,0 +1,4 @@
+# pyproject.toml
+[tool.ruff]
+exclude = ["dl-env", ".git", "data_feet_pb2_grpc.py", "data_feet_pb2.py"]
+lint.ignore = ["E722"]

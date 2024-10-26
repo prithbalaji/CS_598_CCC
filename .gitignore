@@ -5,6 +5,9 @@ __pycache__/
 *.log
 data/
 results/
-dl-processing-pipeline/training/imagenet/
+imagenet/
 dl-env-2/
 dl-env/
+*.log*
+experiment_statistics*.csv
+.ruff_cache
