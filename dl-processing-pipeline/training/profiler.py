@@ -55,10 +55,6 @@ class Profiler:
             images = images.view(-1, 3, 224, 224)  # Flatten: (2, 2, 3, 224, 224) -> (4, 3, 224, 224)
             target = target.view(-1)  # Adjust target as well
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 2d2ec36 (fixing profiler and refactoring things)
             images, target = images.to(self.device), target.to(self.device)
 
             output = model(images)
@@ -235,10 +231,14 @@ class Profiler:
 
 if __name__ == '__main__':
 <<<<<<< HEAD
+<<<<<<< HEAD
     profiler = Profiler(batch_size=200, dataset_path='imagenet', grpc_host='localhost', grpc_port=50051)
 =======
     profiler = Profiler(batch_size=1, dataset_path='imagenet', grpc_host='localhost', grpc_port=50051)
 >>>>>>> 2d2ec36 (fixing profiler and refactoring things)
+=======
+    profiler = Profiler(batch_size=200, dataset_path='imagenet', grpc_host='localhost', grpc_port=50051)
+>>>>>>> 4bd1977 (adding support for larger batch sizes)
     gpu_throughput, io_throughput, cpu_preprocessing_throughput, sample_metrics = profiler.run_profiling()
     print("Sample Metrics:", sample_metrics)
     # if sample_metrics:  # If the profiler identifies an I/O bottleneck
