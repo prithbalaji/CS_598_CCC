@@ -10,7 +10,7 @@
     "file": {
       "level": "DEBUG",
       "class": "logging.FileHandler",
-      "filename": "/workspace/logs/log.txt",
+      "filename": "/workspace/logs/log.log",
       "formatter": "standard",
       "encoding": "utf8"
     },
@@ -22,7 +22,7 @@
     "data_collection_handler": {
       "level": "DEBUG",
       "class": "logging.FileHandler",
-      "filename": "/workspace/logs/data_collection.txt",
+      "filename": "/workspace/logs/data_collection.log",
       "formatter": "standard",
       "encoding": "utf8"
     }
