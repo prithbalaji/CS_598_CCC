@@ -11,6 +11,9 @@ from io import BytesIO
 import argparse
 from utils import DecodeJPEG, ConditionalNormalize, ImagePathDataset, load_logging_config
 import logging
+import psutil
+import GPUtil
+import time
 
 from PIL import Image
 
@@ -50,6 +53,74 @@ def parse_args():
 def handle_termination(signum, frame):
     LOGGER.warning("Termination signal received. Stopping workers...")
     kill.set()  # Set the event to stop the fill_queue process
+
+
+class MetricsCollector:
+    def __init__(self, interval=1):
+        self.interval = interval
+        self.running = False
+        self.metrics = {
+            'cpu_util': [],
+            'memory_util': [],
+            'disk_io_read': [],
+            'disk_io_write': [],
+            'network_sent': [],
+            'network_recv': [],
+        }
+        if torch.cuda.is_available():
+            self.metrics['gpu_util'] = []
+            self.metrics['gpu_memory'] = []
+
+    def start(self):
+        self.running = True
+        self.collection_thread = mp.Process(target=self._collect_metrics)
+        self.collection_thread.start()
+
+    def stop(self):
+        self.running = False
+        self.collection_thread.join()
+
+    def _collect_metrics(self):
+        last_disk_io = psutil.disk_io_counters()
+        last_net_io = psutil.net_io_counters()
+        while self.running:
+            # CPU Utilization
+            self.metrics['cpu_util'].append(psutil.cpu_percent())
+            
+            # Memory Utilization
+            self.metrics['memory_util'].append(psutil.virtual_memory().percent)
+            
+            # Disk I/O
+            disk_io = psutil.disk_io_counters()
+            self.metrics['disk_io_read'].append(disk_io.read_bytes - last_disk_io.read_bytes)
+            self.metrics['disk_io_write'].append(disk_io.write_bytes - last_disk_io.write_bytes)
+            last_disk_io = disk_io
+
+            # Network I/O
+            net_io = psutil.net_io_counters()
+            self.metrics['network_sent'].append(net_io.bytes_sent - last_net_io.bytes_sent)
+            self.metrics['network_recv'].append(net_io.bytes_recv - last_net_io.bytes_recv)
+            last_net_io = net_io
+
+            # GPU metrics if available
+            if torch.cuda.is_available():
+                gpus = GPUtil.getGPUs()
+                if gpus:
+                    self.metrics['gpu_util'].append(gpus[0].load * 100)
+                    self.metrics['gpu_memory'].append(gpus[0].memoryUtil * 100)
+
+            DATA_LOGGER.info(f"Metrics: CPU: {self.metrics['cpu_util'][-1]}%, "
+                             f"Memory: {self.metrics['memory_util'][-1]}%, "
+                             f"Disk Read: {self.metrics['disk_io_read'][-1]}, "
+                             f"Disk Write: {self.metrics['disk_io_write'][-1]}, "
+                             f"Net Sent: {self.metrics['network_sent'][-1]}, "
+                             f"Net Recv: {self.metrics['network_recv'][-1]}")
+            
+            if torch.cuda.is_available():
+                DATA_LOGGER.info(f"GPU: {self.metrics['gpu_util'][-1]}%, "
+                                 f"GPU Memory: {self.metrics['gpu_memory'][-1]}%")
+
+            time.sleep(self.interval)
 
 
 class DataFeedService(data_feed_pb2_grpc.DataFeedServicer):
@@ -174,6 +245,9 @@ def serve(offloading_value, compression_value, batch_size):
     # Cache for storing the offloading plan (sample_id -> number of transformations)
     offloading_plan = {}
 
+    metrics_collector = MetricsCollector()
+    metrics_collector.start()
+
     # Start the fill_queue process
     workers = []
     for worker_id in range(num_cores):
@@ -210,11 +284,17 @@ def serve(offloading_value, compression_value, batch_size):
     )
     server.add_insecure_port("[::]:50051")
     server.start()
-    server.wait_for_termination()
-
-    kill.set()
-    for p in workers:
-        p.join()
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        LOGGER.info("Keyboard interrupt received. Stopping server...")
+    finally:
+        kill.set()
+        for p in workers:
+            p.join()
+        metrics_collector.stop()
+        LOGGER.info("Server stopped.")
+    
 
 
 def custom_collate_fn(batch):
@@ -239,3 +319,4 @@ if __name__ == "__main__":
     compression_value = args.compression
     batch_size = args.batch_size
     serve(offloading_value, compression_value, batch_size)
+
